@@ -753,11 +753,7 @@ throw()
 
       case BEGIN_WHOLE_BOARD_UPDATE :
       handleWholeBoard
-      (update,
-       ouchCount,
-       &bottommostInvaderRankRow,
-       &leftMostInvaderCol
-       );
+      (update, ouchCount, &bottommostInvaderRankRow, &leftMostInvaderCol);
       break;
 
       case HAVE_WON_UPDATE :
