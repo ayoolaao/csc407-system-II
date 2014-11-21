@@ -1,0 +1,14 @@
+
+void*	functionName  (void*	voidPtr)
+{
+  ...
+}
+
+
+{
+  pthread_t	threadId;
+
+  int status = pthread_create(&threadId,NULL,functionName,&param)
+
+
+  pthread_join(threadId,&returnValuePtr);

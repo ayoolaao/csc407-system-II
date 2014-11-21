@@ -1,0 +1,20 @@
+
+N Brown Station [Brn1 Brn4 Brn14 ]
+      |                N Red Station [Red3 Red15 ]
+N Brown Track [Brn11 ]       |
+      |                N Red Track [Red0 ]
+       \                    /
+        \                  /
+         \                /
+         N Tunnel Station [Brn8 Brn13 ]
+                  |
+         Tunnel Track [Red5 ]
+                  |
+         S Tunnel Station [Red6 Red12 ]
+         /                \
+        /                  \
+       /                    \
+      |                S Red Track [Red7 ]
+S Brown Track [Brn10 ]       |
+      |                S Red Station [Red2 Red9 ]
+S Brown Station []
