@@ -39,7 +39,7 @@
 //	 const int     INITIAL_PORT	(e.g. = 20000)
 //const int     C_STRING_MAX	(e.g. = 256)
 
-class	ServerCommInfo
+ class	ServerCommInfo
  {
   //  0.  Constants:
   //  PURPOSE:  To tell the char used to separate the hostname from the
@@ -360,8 +360,7 @@ throw()
 
 //  PURPOSE:  To initialize ncurses in general, and 'mainWindowPtr' and
 //	'errorWindowPtr' in particular.  No return value.
-void	startGame	(const ServerCommInfo&	serverCommInfo
- )
+void	startGame	(const ServerCommInfo&	serverCommInfo)
 throw ()
 {
   //  I.  Parameter validity check:
@@ -392,8 +391,7 @@ throw ()
 //	the corresponding space-invader requests to the server.  'vPtr'
 //	points to a 'ServerCommInfo' object that holds information on the
 //	server that governs the game.  Returns NULL.
-void*	attendToUser		(void*		vPtr
-  )
+void*	attendToUser		(void*		vPtr)
 throw()
 {
   //  I.  Application validity check:
@@ -826,10 +824,8 @@ int     main (int argc, const char* argv[])
 
   //  II.  Do spaceInvaders client:
   //  II.A.  Request user to scale window to adequate size:
-  printf("Please rescale window to be at least "
-    "%d rows by %d col, then press Enter:\n",
-    DEFAULT_NUM_ROWS,DEFAULT_NUM_COLS
-    );
+  printf("Please rescale window to be at least %d rows by %d col, then press Enter:\n",
+    DEFAULT_NUM_ROWS,DEFAULT_NUM_COLS);
   fgets(cText,C_STRING_MAX,stdin);
 
   //  II.B.  Get connection parameters:
