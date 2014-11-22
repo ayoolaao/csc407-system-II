@@ -95,6 +95,7 @@
     if  (getConnectFD() != -1)
     {
       //  YOUR CODE HERE to close 'getConnectFD()'
+      close(getConnectFD());
     }
 
     //  III.  Finished:
@@ -252,9 +253,41 @@ throw()
     //  Please attempt to set member variable 'connectFD' to a file descriptor
     //  of a socket for talking with the server whose name is given by
     //  'getHostNamePtr()' and whose port is given by 'getPortNumber()'.
+const char* machineName = getHostNamePtr();
+int port = getPortNumber();
 
-    //  If the connection was successfully made then it should return 'true'.
-    //  Otherwise it should return 'false'.
+// Create a socket
+  connectFD = socket(AF_INET, // AF_INET domain
+        SOCK_STREAM, // Reliable TCP
+        0);
+  struct addrinfo* hostPtr;
+  int status = getaddrinfo(machineName,NULL,NULL,&hostPtr);
+
+  if (status != 0)
+  {
+    fprintf(stderr,gai_strerror(status));
+    return(false);
+  }
+
+  // Connect to server
+  struct sockaddr_in server;
+  // Clear server datastruct
+  memset(&server, 0, sizeof(server));
+  // Use TCP/IP
+  server.sin_family = AF_INET;
+  // Tell port # in proper network byte order
+  server.sin_port = htons(port);
+  // Copy connectivity info from info on server ("hostPtr")
+  server.sin_addr.s_addr =
+  ((struct sockaddr_in*)hostPtr->ai_addr)->sin_addr.s_addr;
+  status = connect(connectFD,(struct sockaddr*)&server,sizeof(server));
+
+  if  (status < 0)
+  {
+    fprintf(stderr,"Could not connect %s:%d\n",machineName,port);
+    return(false);
+  }
+
 
     //  III.  If get here then have connected to server:
   return(true);
@@ -425,7 +458,7 @@ throw()
   int   connectFD = ((const ServerCommInfo*)vPtr)->getConnectFD();
 
   //  II.A.  Each iteration handles one potential keyboard command:
-  while  ( (key = 0 /* <- YOUR CODE replace '0' with code that gets a key */ ) != QUIT_CHAR )
+  while  ( (key = getch() ) != QUIT_CHAR )
   {
     //  II.A.1.  Quit loop if game is over:
     if  ( !shouldContinueGame )
@@ -442,17 +475,38 @@ throw()
     //  (1) put 'LEFT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
 
+      if(key == LEFT_REQUEST)
+      {
+        int nKey = htons(LEFT_REQUEST);
+        write(connectFD,&nKey,REQUEST_LENGTH);
+      }
+      
     //  If the user typed 'KEY_RIGHT' then:
     //  (1) put 'RIGHT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
 
+      if(key == RIGHT_REQUEST)
+      {
+        int nKey = htons(RIGHT_REQUEST);
+        write(connectFD,&nKey,REQUEST_LENGTH);
+      }
 
     //  If the user typed space or newline then:
     //  (1) put 'SHOOT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
 
+      if((key == '\n') || (key == ' '))
+      {
+        int nKey = htons(SHOOT_REQUEST);
+        write(connectFD,&nKey,REQUEST_LENGTH);
+      }
+
+
+
     //  If the user typed anything else then:
     //  Do 'beep()'
+      else
+        beep();
     }
 
   }
@@ -543,15 +597,15 @@ throw()
 
   //  II.B.  Get 'bottommostInvaderRankRow' and 'leftMostInvaderCol':
   //  YOUR CODE HERE:
-  *bottommostInvaderRankRowPtr   = 0; // <-- Replace with
+  *bottommostInvaderRankRowPtr   = ntohs(  *(((short*)update) + 1)); // <-- Replace with
                 //  *(((short*)update) + 1), but in
               // host endianness.
-  *leftMostInvaderColPtr   = 0; // <-- Replace with 
+  *leftMostInvaderColPtr   = ntohs(  *(((short*)update) + 2)); // <-- Replace with 
                 //  *(((short*)update) + 2), but in
               // host endianness.
 
   //  II.C.  Display live invaders:
-  char*   bufferCursor  = NULL; // <-- Replace with
+  char*   bufferCursor  = (char*)(((short*)update) + 3); // <-- Replace with
               // (char*)(((short*)update) + 3)
 
   interval++;
@@ -560,7 +614,7 @@ throw()
   {
     int   currentBitPosition  = 0x1;
     //  YOUR CODE HERE:
-    int   bitArray    = 0; // <-- Replace with
+    int   bitArray    = ntohl(*((int*)bufferCursor)); // <-- Replace with
                    // *((int*)bufferCursor) converted
                // to host endianness
                // (it is 32 bits)
@@ -579,6 +633,8 @@ throw()
   //  YOUR CODE HERE:
   //  Move to 'row', 'col' of 'mainWindowPtr' and print
   //  'liveInvader[interval % NUM_INVADER_FRAMES]'
+       wmove(mainWindowPtr, row, col);
+       waddstr(mainWindowPtr,liveInvader[interval % NUM_INVADER_FRAMES]); 
      }
 
      currentBitPosition <<= 1;
@@ -590,10 +646,10 @@ throw()
  for  (index = 0;  index < MAX_NUM_INVADER_BULLETS;  index++)
  {
     //  YOUR CODE HERE:
-    row      = 0; // <-- Replace with '*(short*)bufferCursor'
+    row      = ntohs(*(short*)bufferCursor); // <-- Replace with '*(short*)bufferCursor'
                 // changed to host endianness
     bufferCursor  += SIZE16;
-    col      = 0; // <-- Replace with '*(short*)bufferCursor'
+    col      = ntohs(*(short*)bufferCursor); // <-- Replace with '*(short*)bufferCursor'
                 // changed to host endianness
     bufferCursor  += SIZE16;
 
@@ -601,12 +657,14 @@ throw()
     {
       //  YOUR CODE HERE
       //  move to 'row', 'col' of 'mainWindowPtr' and display character '*'.
+      wmove(mainWindowPtr, row, col);
+      waddch(mainWindowPtr,'*');
     }
 
   }
 
   //  II.E.  Display live defender:
-  col    = 0; // <-- Replace with '*(short*)bufferCursor'
+  col    = ntohs(*(short*)bufferCursor); // <-- Replace with '*(short*)bufferCursor'
           // changed to host endianness
   bufferCursor  += SIZE16;
 
@@ -615,13 +673,15 @@ throw()
     //  YOUR CODE HERE
     //  move to 'defenderRow', 'col' of 'mainWindowPtr' and display string
     //  'defender'.
+    wmove(mainWindowPtr, defenderRow, col);
+    waddstr(mainWindowPtr, "defender");
   }
 
   //  II.F.  Display live defender bullet:
-  row    = 0; // <-- Replace with '*(short*)bufferCursor'
+  row    = ntohs(*(short*)bufferCursor); // <-- Replace with '*(short*)bufferCursor'
           // changed to host endianness
   bufferCursor  += SIZE16;
-  col    = 0; // <-- Replace with '*(short*)bufferCursor'
+  col    = ntohs(*(short*)bufferCursor); // <-- Replace with '*(short*)bufferCursor'
           // changed to host endianness
   bufferCursor  += SIZE16;
 
@@ -629,16 +689,20 @@ throw()
   {
     //  YOUR CODE HERE
     //  move to 'row', 'col' of 'mainWindowPtr' and display character '|'.
+    wmove(mainWindowPtr, row, col);
+    waddch(mainWindowPtr,'|');
   }
 
   //  II.G.  Display 'ouchCount':
   snprintf(cText,C_STRING_MAX,"Ouch count: %d",ouchCount);
   //  YOUR CODE HERE
   //  Move to 0,0 of 'mainWindowPtr' and display 'cText':
+  wmove(mainWindowPtr, 0, 0);
 
   //  III.  Finished:
   //  YOUR CODE HERE:
   //  Make all of your changes to 'mainWindowPtr' visible.
+  wrefresh(mainWindowPtr);
 }
 
 
@@ -656,6 +720,12 @@ throw()
   //  * Write "Congratulations!  You destroyed all the invaders!"
   //  * Make the changes visible
   //  * 'sleep()' for 4 seconds
+
+  clear();
+  move(10, 20);
+  addstr("Congratulations!  You destroyed all the invaders!");
+  refresh();
+  sleep(4);
 
   //  III.  Finished;
 }
@@ -681,6 +751,9 @@ throw()
   //  * Move to 0, 0 of 'mainWindowPtr'
   //  * Write 'cText' to that window
   //  * Make changes visible
+  wmove(mainWindowPtr, 0, 0);
+  addstr(cText);
+
 
   //  III.  Finished:
 }
@@ -706,10 +779,10 @@ throw()
 
   //  II.A.  Get arguments from 'update[]'
   //  YOUR CODE HERE:
-  short rankIndex   = 0; // <-- Replace with the short value
+  short rankIndex   = ntohs(*( ((short*)update) + 1)); // <-- Replace with the short value
              // *( ((short*)update) + 1), converted from
            // network to host endianness
-  short fileIndex = 0; // <-- Replace with the short value
+  short fileIndex = ntohs(*( ((short*)update) + 2)); // <-- Replace with the short value
              // *( ((short*)update) + 2), converted from
            // network to host endianness
   short row   = getInvaderRowGivenRankAndBottommostRankRow
@@ -726,6 +799,14 @@ throw()
   //  * Move to 'row','col' of 'mainWindowPtr'
   //  * Print "    " to that window
   //  * Make the window visible
+  wmove(mainWindowPtr,row,col);
+  waddstr(mainWindowPtr,"BOOM");
+  wrefresh(mainWindowPtr);
+  usleep(20000);
+  wmove(mainWindowPtr,row,col);
+  waddstr(mainWindowPtr,"    ");
+  wrefresh(mainWindowPtr);
+
 
   //  III.  Finished:
 }
@@ -814,8 +895,8 @@ throw()
       default :
       //  YOUR CODE HERE to:
       //  * Move to 0,0 of 'errorWindowPtr'
-
       wmove(errorWindowPtr,0,0);
+
       snprintf(cText,C_STRING_MAX,
         "Unknown char w/int value %d received.",(int)update[0]
         );
@@ -842,11 +923,9 @@ throw()
   //  YOUR CODE HERE TO:
   //  (1) destroy the two windows created in 'startGame()'
   //  (2) turn ncurses off
-
-  delwin(mainWindowPtr);
-  delwin(errorWindowPtr);
-
-  endwin();
+ delwin(mainWindowPtr);
+ delwin(errorWindowPtr);
+ endwin();
 
   //  III.  Finished:
 }
@@ -886,14 +965,14 @@ int     main (int argc, const char* argv[])
       //  The mama-thread should wait for both baby threads before doing the
       //    'endGame()'
 
-      pthread_t localId;
-      pthread_t remoteId;
+      pthread_t attendToUser_pid;
+      pthread_t attendToServer_pid;
 
-      pthread_create(&localId,NULL,attendToUser,&serverCommInfo);
-      pthread_create(&remoteId,NULL,attendToServer,&serverCommInfo);
+      pthread_create(&attendToUser_pid,NULL,attendToUser,&serverCommInfo);
+      pthread_create(&attendToServer_pid,NULL,attendToServer,&serverCommInfo);
 
-      pthread_join(remoteId,NULL);
-      pthread_join(localId,NULL);
+      pthread_join(attendToServer_pid,NULL);
+      pthread_join(attendToUser_pid,NULL);
 
 
       endGame();
