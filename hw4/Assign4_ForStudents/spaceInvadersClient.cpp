@@ -35,9 +35,9 @@
 
 //  PURPOSE:  To hold information about the server to which to connect.
 //	(Assumes there are global constants:
-//	 const char*   INITIAL_HOST	(e.g. = "localhost.localdomain")
-//	 const int     INITIAL_PORT	(e.g. = 20000)
-//const int     C_STRING_MAX	(e.g. = 256)
+//	const char*   INITIAL_HOST	(e.g. = "localhost.localdomain")
+//	const int     INITIAL_PORT	(e.g. = 20000)
+//	const int     C_STRING_MAX	(e.g. = 256)
 
  class	ServerCommInfo
  {
@@ -326,10 +326,7 @@ throw()
 //  PURPOSE:  To initialize the communication in 'serverCommInfo' from the
 //	command line argument parameters 'argc' and 'argv', and from whatever
 //	 else the user enters.  No return value.
-void	initializeCommParams    (int			argc,
- const char*		argv[],
- ServerCommInfo&	serverCommInfo
- )
+void	initializeCommParams (int argc, const char* argv[], ServerCommInfo&	serverCommInfo)
 throw()
 {
   //  I.  Parameter validity check:
@@ -382,6 +379,16 @@ throw ()
   //  * Set 'errorWindowPtr' to be a subwindow that starts at row
   //    'MAX_NUM_ROWS-1', column 0.  It should be 1 row high and 120 columns
   //	wide.
+  initscr();
+  cbreak();
+  clear();
+  usleep(500);
+  halfdelay(5);
+  keypad(stdscr,TRUE);
+  noecho();
+  scrollok(stdscr,TRUE);
+  mainWindowPtr = newwin(MAX_NUM_ROWS-1, 120, 0, 0);
+  errorWindowPtr = newwin(1, 120, MAX_NUM_ROWS-1, 0);
 
   //  III.  Finished:
 }
@@ -391,7 +398,7 @@ throw ()
 //	the corresponding space-invader requests to the server.  'vPtr'
 //	points to a 'ServerCommInfo' object that holds information on the
 //	server that governs the game.  Returns NULL.
-void*	attendToUser		(void*		vPtr)
+void*	attendToUser (void* vPtr)
 throw()
 {
   //  I.  Application validity check:
@@ -465,6 +472,10 @@ throw()
   //  * Print 'cText' to the WHOLE screen
   //  * Make the text visible
   //  * 'sleep()' for 6 seconds
+  move(10, 0);
+  addstr(cText);
+  refresh();
+  sleep(6);
 
   //  III.  Finished:
 }
@@ -512,6 +523,7 @@ throw()
   //  II.A.  Clear the screen:
   //  YOUR CODE HERE:
   //  * clear 'mainWindowPtr'
+  wclear(mainWindowPtr);
 
   //  II.B.  Get 'bottommostInvaderRankRow' and 'leftMostInvaderCol':
   //  YOUR CODE HERE:
@@ -726,7 +738,8 @@ throw()
   {
     //  II.A.1.  Get update from server:
     update[0]		= '\0';
-    int	remoteLen	= 0;	// <-- YOUR CODE to replace the '0' with
+    int	remoteLen	= rio_read(serverCommInfoPtr->getConnectFD(),update,MAX_UPDATE_LEN);	
+    // <-- YOUR CODE to replace the '0' with
     			  	// a 'rio_read()' call that reads
 				// 'MAX_UPDATE_LEN' bytes from
 				// 'serverCommInfoPtr->getConnectFD()' and
@@ -775,16 +788,25 @@ throw()
       //  * Move to 0,0 of 'errorWindowPtr'
       //  * Write the text at 'update+2' to 'errorWindowPtr'
       //  * Make the text visible
+      wmove(errorWindowPtr, 0, 0);
+      waddstr(errorWindowPtr,update+2);
+      wrefresh(errorWindowPtr);
+
+
       break;
 
       default :
       //  YOUR CODE HERE to:
       //  * Move to 0,0 of 'errorWindowPtr'
+
+      wmove(errorWindowPtr,0,0);
       snprintf(cText,C_STRING_MAX,
         "Unknown char w/int value %d received.",(int)update[0]
         );
       //  * Write the text in 'cText' to 'errorWindowPtr'
       //  * Make the text visible
+      waddstr(errorWindowPtr,cText);
+      wrefresh(errorWindowPtr);
     }
 
   }
@@ -804,6 +826,11 @@ throw()
   //  YOUR CODE HERE TO:
   //  (1) destroy the two windows created in 'startGame()'
   //  (2) turn ncurses off
+
+  delwin(mainWindowPtr);
+  delwin(errorWindowPtr);
+
+  endwin();
 
   //  III.  Finished:
 }
@@ -842,6 +869,17 @@ int     main (int argc, const char* argv[])
       //  Both threads need the address of 'serverCommInfo' as an argument.
       //  The mama-thread should wait for both baby threads before doing the
       //    'endGame()'
+
+      pthread_t localId;
+      pthread_t remoteId;
+
+      pthread_create(&localId,NULL,attendToUser,&serverCommInfo);
+      pthread_create(&remoteId,NULL,attendToServer,&serverCommInfo);
+
+      pthread_join(remoteId,NULL);
+      pthread_join(localId,NULL);
+
+
       endGame();
     }
 
