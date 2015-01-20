@@ -253,8 +253,8 @@ throw()
     //  Please attempt to set member variable 'connectFD' to a file descriptor
     //  of a socket for talking with the server whose name is given by
     //  'getHostNamePtr()' and whose port is given by 'getPortNumber()'.
-const char* machineName = getHostNamePtr();
-int port = getPortNumber();
+  const char* machineName = getHostNamePtr();
+  int port = getPortNumber();
 
 // Create a socket
   connectFD = socket(AF_INET, // AF_INET domain
@@ -474,39 +474,36 @@ throw()
     //  If the user typed 'KEY_LEFT' then:
     //  (1) put 'LEFT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
-
-      if(key == LEFT_REQUEST)
-      {
-        int nKey = htons(LEFT_REQUEST);
-        write(connectFD,&nKey,REQUEST_LENGTH);
-      }
+      case KEY_LEFT:
+      request = htons(LEFT_REQUEST);
+      write(connectFD,&request,REQUEST_LENGTH);
+      break;
       
     //  If the user typed 'KEY_RIGHT' then:
     //  (1) put 'RIGHT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
-
-      if(key == RIGHT_REQUEST)
-      {
-        int nKey = htons(RIGHT_REQUEST);
-        write(connectFD,&nKey,REQUEST_LENGTH);
-      }
+      case KEY_RIGHT:
+      request = htons(RIGHT_REQUEST);
+      write(connectFD,&request,REQUEST_LENGTH);
+      break;
 
     //  If the user typed space or newline then:
     //  (1) put 'SHOOT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
+      case '\n':
+      request = htons(SHOOT_REQUEST);
+      write(connectFD,&request,REQUEST_LENGTH);
+      break;
 
-      if((key == '\n') || (key == ' '))
-      {
-        int nKey = htons(SHOOT_REQUEST);
-        write(connectFD,&nKey,REQUEST_LENGTH);
-      }
-
-
+      case ' ':
+      request = htons(SHOOT_REQUEST);
+      write(connectFD,&request,REQUEST_LENGTH);
+      break;
 
     //  If the user typed anything else then:
     //  Do 'beep()'
-      else
-        beep();
+      default:
+      beep();
     }
 
   }
@@ -516,6 +513,8 @@ throw()
   {
     //  (1) put 'DISCONNECT_REQUEST' in 'request' (in network endianness, it is a short)
     //  (2) send 'REQUEST_LENGTH' bytes in 'request' to file descriptor 'connectFD'
+    request = htons(DISCONNECT_REQUEST);
+    write(connectFD,&request,REQUEST_LENGTH);
   }
 
   //  III.  Finished:
@@ -674,7 +673,7 @@ throw()
     //  move to 'defenderRow', 'col' of 'mainWindowPtr' and display string
     //  'defender'.
     wmove(mainWindowPtr, defenderRow, col);
-    waddstr(mainWindowPtr, "defender");
+    waddstr(mainWindowPtr, defender);
   }
 
   //  II.F.  Display live defender bullet:
@@ -698,6 +697,7 @@ throw()
   //  YOUR CODE HERE
   //  Move to 0,0 of 'mainWindowPtr' and display 'cText':
   wmove(mainWindowPtr, 0, 0);
+  waddstr(mainWindowPtr,cText);
 
   //  III.  Finished:
   //  YOUR CODE HERE:
